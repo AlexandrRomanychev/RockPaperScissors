@@ -1,3 +1,5 @@
+import server.game.GameServer;
+
 /**
  * TODO Class Description
  *
@@ -7,6 +9,6 @@
 public class Main {
 
 	public static void main(String[] args) {
-
+		new GameServer().run();
 	}
 }
