@@ -28,7 +28,6 @@ public class PlayerSession {
 	final PrintWriter writer;
 	final BufferedReader reader;
 	final Socket socket;
-	final Thread currentThread;
 	PlayerSessionState playerState = PlayerSessionState.ENTER_NAME;
 	@EqualsAndHashCode.Include
 	String name;
@@ -36,7 +35,6 @@ public class PlayerSession {
 	@SneakyThrows
 	public PlayerSession(Socket socket) {
 		this.socket = socket;
-		this.currentThread = Thread.currentThread();
 		this.writer = new PrintWriter(socket.getOutputStream(), true);
 		this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 	}
