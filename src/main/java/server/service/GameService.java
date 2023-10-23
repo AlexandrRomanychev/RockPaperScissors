@@ -1,6 +1,7 @@
 package server.service;
 
-import server.helper.WriterHelper;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import server.player.PlayerSession;
 import server.room.PlayingRoom;
 
@@ -13,8 +14,9 @@ import java.util.concurrent.*;
  * @author Alexandr Romanychev
  * @since 21.10.2023
  */
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GameService {
-	private final Deque<PlayerSession> playerSessions;
+	Deque<PlayerSession> playerSessions;
 
 	public GameService() {
 		this.playerSessions = new ConcurrentLinkedDeque<>();
@@ -25,8 +27,8 @@ public class GameService {
 	 * Запустить запуск создания комнат по расписания каждые 10 секунд
 	 */
 	private void startScheduledCreatingRooms() {
-		Executors.newScheduledThreadPool(1)
-			.scheduleWithFixedDelay(this::createPlayingRooms, 30, 30, TimeUnit.SECONDS);
+		Executors.newSingleThreadScheduledExecutor()
+			.scheduleWithFixedDelay(this::createPlayingRooms, 10, 10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -44,12 +46,19 @@ public class GameService {
 	 * Добавить нового игрока
 	 * @param playerSession сессия нового игрока
 	 */
-	public synchronized boolean addNewPlayer(PlayerSession playerSession) {
+	public boolean addNewPlayer(PlayerSession playerSession) {
 		if (this.playerSessions.contains(playerSession)) {
 			return false;
 		}
 		this.playerSessions.add(playerSession);
-		playerSession.nextPlayerState();
 		return true;
+	}
+
+	/**
+	 * Удалить игрока из списка
+	 * @param playerSession сессия пользователя
+	 */
+	public void removePlayer(PlayerSession playerSession) {
+		playerSessions.remove(playerSession);
 	}
 }

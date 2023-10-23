@@ -1,7 +1,7 @@
 import server.game.GameServer;
 
 /**
- * TODO Class Description
+ * Точка входа в приложение
  *
  * @author Alexandr Romanychev
  * @since 21.10.2023

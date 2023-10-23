@@ -1,13 +1,18 @@
 package server.player;
 
-import server.helper.WriterHelper;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.SneakyThrows;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Сессия пользователя
@@ -15,74 +20,67 @@ import java.util.Objects;
  * @author Alexandr Romanychev
  * @since 21.10.2023
  */
+@Slf4j
+@Getter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PlayerSession {
-	private final PrintWriter writer;
-	private final BufferedReader reader;
-	private final Socket socket;
-	private PlayerSessionState playerState = PlayerSessionState.ENTER_NAME;
-	private String name;
+	final PrintWriter writer;
+	final BufferedReader reader;
+	final Socket socket;
+	final Thread currentThread;
+	PlayerSessionState playerState = PlayerSessionState.ENTER_NAME;
+	@EqualsAndHashCode.Include
+	String name;
 
-	public PlayerSession(Socket socket) throws IOException {
+	@SneakyThrows
+	public PlayerSession(Socket socket) {
 		this.socket = socket;
-		this.writer = new PrintWriter(socket.getOutputStream());
+		this.currentThread = Thread.currentThread();
+		this.writer = new PrintWriter(socket.getOutputStream(), true);
 		this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-	}
-
-	public String getName() {
-		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
 	}
 
-	public PlayerSessionState getPlayerState() {
-		return playerState;
-	}
-
 	public void nextPlayerState() {
 		this.playerState = this.playerState.nextState();
 	}
 
-	public void setWinner() {
+	public void setWinnerState() {
 		this.playerState = PlayerSessionState.WIN;
 	}
 
-	public void setLooser() {
+	public void setLooserState() {
 		this.playerState = PlayerSessionState.LOSE;
 	}
 
-	public void closeSession() throws IOException {
-		WriterHelper.write(this.writer, "Closing session...");
-		this.writer.close();
-		this.reader.close();
+	public void setTerminateState() {
+		this.playerState = PlayerSessionState.TERMINATED;
+	}
+
+	@SneakyThrows
+	public void closeSession() {
+		if (writer != null) {
+			writer.println("Closing session...");
+			this.writer.close();
+		}
+		if (reader != null) {
+			this.reader.close();
+		}
 		this.socket.close();
 	}
 
-	public PrintWriter getWriter() {
-		return writer;
-	}
-
-	public String readValue() {
-		String response = null;
+	public Optional<String> readValue() {
+		String readedValue = null;
 		try {
-			response = this.reader.readLine().trim();
+			readedValue = reader.readLine();
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
+			log.error("Can't read from OutputStream", e);
+			setTerminateState();
 		}
-		return response;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof PlayerSession)) {
-			return false;
-		}
-		return this.name.equals(((PlayerSession)o).getName());
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(name);
+		return Optional.ofNullable(readedValue);
 	}
 }

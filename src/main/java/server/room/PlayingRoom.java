@@ -1,6 +1,12 @@
 package server.room;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import server.player.PlayerSession;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Игровая комната
@@ -8,17 +14,15 @@ import server.player.PlayerSession;
  * @author Alexandr Romanychev
  * @since 21.10.2023
  */
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@AllArgsConstructor
 public class PlayingRoom {
-	private final PlayerSession firstPlayer;
-	private final PlayerSession secondPlayer;
-
-	public PlayingRoom(PlayerSession firstPlayer, PlayerSession secondPlayer) {
-		this.firstPlayer = firstPlayer;
-		this.secondPlayer = secondPlayer;
-	}
+	PlayerSession firstPlayer;
+	PlayerSession secondPlayer;
 
 	public void run() {
-		new Thread(new PlayingRoomThread(firstPlayer, secondPlayer)).start();
+		ExecutorService executorService = Executors.newFixedThreadPool(3);
+		executorService.submit(new PlayingRoomThread(firstPlayer, secondPlayer, executorService));
 	}
 
 }
